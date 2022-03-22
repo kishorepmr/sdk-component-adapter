@@ -1,6 +1,7 @@
 import {
   Subject,
   concat,
+  defer,
   from,
   fromEvent,
   Observable,
@@ -8,6 +9,7 @@ import {
   ReplaySubject,
 } from 'rxjs';
 import {
+  catchError,
   filter,
   finalize,
   flatMap,
@@ -157,6 +159,25 @@ export default class RoomsSDKAdapter extends RoomsAdapter {
     }
 
     return this.getRoomObservables[ID];
+  }
+
+  /**
+   * Returns an observable that emits room data of the recently created room
+   * Observable will complete after one emission.
+   *
+   * @param {Room} room  Information about the room to create.
+   * @returns {external:Observable.<Room>} Observable stream that emits room data.
+   * @memberof RoomsAdapter
+   */
+  createRoom(room) {
+    logger.debug('ROOM', room, 'createRoom()', ['called with', {room}]);
+
+    return defer(() => this.datasource.rooms.create(room)).pipe(
+      catchError((err) => {
+        logger.error('ROOM', room, 'createRoom()', `Unable to create a room with "${room.title}"`, err);
+        throw err;
+      }),
+    );
   }
 
   /**
